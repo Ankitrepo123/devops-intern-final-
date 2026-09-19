@@ -43,7 +43,7 @@ jobs:
         run: |
           docker build \
             --build-arg BUILD_SHA="${GITHUB_SHA}" \
-            -t devops-intern-final:"${GITHUB_SHA}" \
+            -t "devops-intern-final:${GITHUB_SHA}" \
             ./app
 
   test:
@@ -59,7 +59,7 @@ jobs:
         run: |
           docker build \
             --build-arg BUILD_SHA="${GITHUB_SHA}" \
-            -t devops-intern-final:test \
+            -t "devops-intern-final:test" \
             ./app
 
       - name: Start container
@@ -67,7 +67,7 @@ jobs:
           docker run -d \
             --name devops-intern-nginx \
             -p 8080:8080 \
-            devops-intern-final:test
+            "devops-intern-final:test"
 
       - name: Wait for application
         run: |
@@ -109,6 +109,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set GHCR image name
+        id: image
+        run: |
+          IMAGE_OWNER="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')"
+          echo "image=ghcr.io/${IMAGE_OWNER}/devops-intern-final" >> "$GITHUB_OUTPUT"
+
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
@@ -120,11 +126,11 @@ jobs:
         run: |
           docker build \
             --build-arg BUILD_SHA="${GITHUB_SHA}" \
-            -t ghcr.io/${{ github.repository_owner }}/devops-intern-final:"${GITHUB_SHA}" \
-            -t ghcr.io/${{ github.repository_owner }}/devops-intern-final:latest \
+            -t "${{ steps.image.outputs.image }}:${GITHUB_SHA}" \
+            -t "${{ steps.image.outputs.image }}:latest" \
             ./app
 
       - name: Push image
         run: |
-          docker push ghcr.io/${{ github.repository_owner }}/devops-intern-final:"${GITHUB_SHA}"
-          docker push ghcr.io/${{ github.repository_owner }}/devops-intern-final:latest
+          docker push "${{ steps.image.outputs.image }}:${GITHUB_SHA}"
+          docker push "${{ steps.image.outputs.image }}:latest"
